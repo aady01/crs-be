@@ -1,16 +1,25 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
+import { PrismaClient } from "./generated/prisma";
 
+import authRoutes from "./routes/auth";
+import issueRoutes from "./routes/issues";
+import deptRoutes from "./routes/departments";
+
+dotenv.config();
 const app = express();
-app.use(express.json());
+const prisma = new PrismaClient();
+
 app.use(cors());
+app.use(express.json());
 
-app.get("", (res: Response, req: Request) => {
-  res.json({
-    message: "hahah",
-  });
-});
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/issues", issueRoutes);
+app.use("/api/departments", deptRoutes);
 
-app.listen(8080, () => {
-  console.log("server is on baby");
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () =>
+  console.log(`Server running on http://localhost:${PORT}`)
+);
