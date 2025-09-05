@@ -13,3 +13,93 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  points       Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  issues        Issue[]         @relation("UserIssues")
+  comments      Comment[]
+  assigned      Assignment[]
+  StatusHistory StatusHistory[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Issue {
+  id           String          @id @default(cuid())
+  title        String
+  description  String
+  latitude     Float?
+  longitude    Float?
+  address      String?
+  status       IssueStatus     @default(OPEN)
+  reporter     User            @relation("UserIssues", fields: [reporterId], references: [id])
+  reporterId   String
+  department   Department?     @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  attachments  Attachment[]
+  comments     Comment[]
+  assignments  Assignment[]
+  history      StatusHistory[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+model Attachment {
+  id      String @id @default(cuid())
+  url     String
+  issue   Issue  @relation(fields: [issueId], references: [id])
+  issueId String
+}
+
+model Comment {
+  id       String @id @default(cuid())
+  content  String
+  issue    Issue  @relation(fields: [issueId], references: [id])
+  issueId  String
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
+}
+
+model Department {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  issues Issue[]
+}
+
+model Assignment {
+  id         String  @id @default(cuid())
+  issue      Issue   @relation(fields: [issueId], references: [id])
+  issueId    String
+  assignee   User    @relation(fields: [assigneeId], references: [id])
+  assigneeId String
+  note       String?
+}
+
+model StatusHistory {
+  id          String       @id @default(cuid())
+  issue       Issue        @relation(fields: [issueId], references: [id])
+  issueId     String
+  from        IssueStatus?
+  to          IssueStatus
+  changedBy   User         @relation(fields: [changedById], references: [id])
+  changedById String
+  createdAt   DateTime     @default(now())
+}
