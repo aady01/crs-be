@@ -1,45 +1,35 @@
+// src/routes/issues.ts
 import { Router } from "express";
 import { PrismaClient } from "../generated/prisma";
 import { auth, AuthRequest } from "../middleware/auth";
 
-const primsa = new PrismaClient();
+const prisma = new PrismaClient();
 const router = Router();
 
-// list items
+// Public list
 router.get("/", async (_, res) => {
-  const issues = await primsa.issue.findMany({
-    include: { reporter: true, department: true },
+  const issues = await prisma.issue.findMany({
+    include: { reporter: true, department: true, comments: true },
+    orderBy: { createdAt: "desc" },
   });
   res.json(issues);
 });
 
-//create issue
+// Create issue (must be authenticated user)
 router.post("/", auth("USER"), async (req: AuthRequest, res) => {
   const { title, description, latitude, longitude, address } = req.body;
-  const issue = await primsa.issue.create({
-    data: {
-      title,
-      description,
-      latitude,
-      longitude,
-      address,
-      reporterId: req.user!.id,
-    },
+  const reporterId = req.user!.id;
+  const issue = await prisma.issue.create({
+    data: { title, description, latitude, longitude, address, reporterId },
   });
-  res.json(issue);
+  res.status(201).json(issue);
 });
 
-//update issue (admin only)
-router.patch("/:id", auth("ADMIN"), async (req, res) => {
+// Update issue (admin only)
+router.patch("/:id", auth("ADMIN"), async (req: AuthRequest, res) => {
   const { id } = req.params;
-  const { status, departmentId, assigneeId } = req.body;
-  const updated = await primsa.issue.update({
-    where: { id },
-    data: { status, departmentId },
-  });
-  if (assigneeId) {
-    await primsa.assignment.create({ data: { issueId: id, assigneeId } });
-  }
+  const updates = req.body;
+  const updated = await prisma.issue.update({ where: { id }, data: updates });
   res.json(updated);
 });
 
