@@ -45,6 +45,8 @@ model Issue {
   status       IssueStatus     @default(OPEN)
   reporter     User            @relation("UserIssues", fields: [reporterId], references: [id])
   reporterId   String
+  imageUrl     String?
+  imageId      String?
   department   Department?     @relation(fields: [departmentId], references: [id])
   departmentId String?
   attachments  Attachment[]
